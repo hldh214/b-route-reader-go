@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/yakumo-saki/b-route-reader-go/src/echonet"
+	"github.com/yakumo-saki/b-route-reader-go/src/ha"
 	"os"
-	"os/exec"
-	"runtime"
-	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -60,6 +58,23 @@ EXIT:
 func runWithSerialPort() error {
 	var err error
 	var ipv6 string
+	var mqttClient mqtt.Client
+
+	// MQTT for HA
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(config.MQTT_BROKER)
+	opts.SetClientID("b-route-reader")
+	opts.SetUsername(config.MQTT_USERNAME)
+	opts.SetPassword(config.MQTT_PASSWORD)
+	opts.SetAutoReconnect(true)
+	opts.SetOnConnectHandler(func(client mqtt.Client) {
+		log.Info().Msg("MQTT connected")
+		ha.InitTopic(client)
+	})
+	mqttClient = mqtt.NewClient(opts)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("error occured while connecting to mqtt broker: %w", token.Error())
+	}
 
 	err = bp35a1.StartConnection()
 	if err != nil {
@@ -86,7 +101,6 @@ func runWithSerialPort() error {
 	totalTimer := time.NewTimer(config.TOTAL_CONSUMPTION_WAIT)
 
 	for {
-
 		select {
 		case <-nowTimer.C:
 			ret, err := bp35a1.GetNowConsumptionData(ipv6)
@@ -97,10 +111,11 @@ func runWithSerialPort() error {
 			nowTimer = time.NewTimer(config.NOW_CONSUMPTION_WAIT)
 
 			log.Info().Msgf("Smartmeter Response: %v", ret)
-			err = handleResult(ret)
-			if err != nil {
-				return fmt.Errorf("error occured while executing %s: %w", config.EXEC_CMD, err)
-			}
+
+			mqttClient.Publish(ha.InstantaneousElectricPowerTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_NOW_DENRYOKU)].String())
+			mqttClient.Publish(ha.InstantaneousCurrentTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_NOW_DENRYUU)].String())
+			mqttClient.Publish(ha.InstantaneousCurrentRPhaseTopic, 0, true, ret[fmt.Sprintf("%02X_Rphase", echonet.P_NOW_DENRYUU)].String())
+			mqttClient.Publish(ha.InstantaneousCurrentTPhaseTopic, 0, true, ret[fmt.Sprintf("%02X_Tphase", echonet.P_NOW_DENRYUU)].String())
 		case <-totalTimer.C:
 			ret, err := bp35a1.GetDeltaConsumptionData(ipv6)
 			if err != nil {
@@ -110,81 +125,9 @@ func runWithSerialPort() error {
 			totalTimer = time.NewTimer(config.TOTAL_CONSUMPTION_WAIT)
 
 			log.Info().Msgf("Smartmeter Response: %v", ret)
-			err = handleResult(ret)
-			if err != nil {
-				return fmt.Errorf("error occured while executing %s: %w", config.EXEC_CMD, err)
-			}
-		}
-	}
 
-}
-
-func handleResult(data bp35a1.ElectricData) error {
-
-	jsonMap := map[string]interface{}{}
-	for k, v := range data {
-		jsonMap[k] = v
-	}
-	jsonMap["datetime"] = time.Now().Format("2006-01-02T15:04:05.999Z")
-
-	json, err := json.Marshal(jsonMap)
-	if err != nil {
-		return err
-	}
-
-	f, err := ioutil.TempFile(os.TempDir(), "b-route-")
-	if err != nil {
-		return err
-	}
-
-	written, err := f.Write(json)
-	if err != nil {
-		return err
-	}
-	if written != len(json) {
-		return fmt.Errorf("bytes written != actual")
-	}
-
-	filepath := f.Name()
-	f.Close()
-
-	// exec
-	output, err := exec.Command(config.EXEC_CMD, f.Name()).CombinedOutput()
-	if err != nil {
-		log.Err(err).Msgf("error executing EXEC_CMD %s", config.EXEC_CMD)
-		outputByteStringsToLog(output, true)
-	} else {
-		outputByteStringsToLog(output, false)
-	}
-
-	os.Remove(filepath)
-
-	return nil
-}
-
-func outputByteStringsToLog(byteStrings []byte, isError bool) {
-	newline := "\n"
-	switch runtime.GOOS {
-	case "windows":
-		newline = "\r\n"
-	case "darwin":
-		newline = "\n"
-	case "linux":
-		newline = "\n"
-	}
-
-	allStrings := string(byteStrings)
-	lines := strings.Split(allStrings, newline)
-	for _, v := range lines {
-		line := v
-		line = strings.ReplaceAll(line, "\r", "")
-		line = strings.ReplaceAll(line, "\n", "")
-		if len(line) > 0 {
-			if isError {
-				log.Error().Msgf("EXEC OUTPUT: %s", line)
-			} else {
-				log.Debug().Msgf("EXEC OUTPUT: %s", line)
-			}
+			mqttClient.Publish(ha.NormalDirectionCumulativeElectricEnergyTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU)].String())
+			mqttClient.Publish(ha.ReverseDirectionCumulativeElectricEnergyTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU_R)].String())
 		}
 	}
 }

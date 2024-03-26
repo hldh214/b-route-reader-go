@@ -1,7 +1,9 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -12,7 +14,12 @@ var B_ROUTE_ID = ""
 var B_ROUTE_PASSWORD = ""
 var SERIAL = ""
 
-var EXEC_CMD = ""
+var MQTT_BROKER = "tcp://localhost:1883"
+var MQTT_USERNAME = ""
+var MQTT_PASSWORD = ""
+
+var MQTT_TOPIC_PREFIX = "brr"
+var MQTT_TOPIC_DEVICE_NAME = "smartmeter"
 
 // SKSCAN を繰り返す回数
 var ACTIVE_SCAN_COUNT = 10
@@ -31,11 +38,23 @@ var LOG_NO_DATETIME = true
 
 // 環境変数からconfigをセット
 func Initialize() {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	err = godotenv.Load(filepath.Join(exPath, ".env"))
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
 	LOG_LEVEL = os.Getenv("LOG_LEVEL")
 	B_ROUTE_ID = os.Getenv("B_ROUTE_ID")
 	B_ROUTE_PASSWORD = os.Getenv("B_ROUTE_PASSWORD")
 	SERIAL = os.Getenv("SERIAL")
-	EXEC_CMD = os.Getenv("EXEC_CMD")
+	MQTT_BROKER = os.Getenv("MQTT_BROKER")
+	MQTT_USERNAME = os.Getenv("MQTT_USERNAME")
+	MQTT_PASSWORD = os.Getenv("MQTT_PASSWORD")
 
 	if LOG_LEVEL == "" {
 		LOG_LEVEL = "INFO"
@@ -60,8 +79,8 @@ func Initialize() {
 	if SERIAL == "" {
 		panic("SERIAL env value is not set")
 	}
-	if EXEC_CMD == "" {
-		panic("EXEC_CMD env value is not set")
+	if MQTT_BROKER == "" {
+		panic("MQTT_BROKER env value is not set")
 	}
 
 	noDatetime := os.Getenv("LOG_NO_DATETIME")
