@@ -2,23 +2,66 @@
 
 ROHM BP35A1を使用してBルート経由でスマートメーターから消費電力を取得する。
 
+![overview](https://github.com/hldh214/b-route-reader-go/assets/5501843/e40dbe1f-6d63-4b41-80d0-9d1aed629f5c)
+
+## 変更点
+
+- 本プロダクトは、yakumo-saki 氏の[b-route-reader-go](https://github.com/yakumo-saki/b-route-reader-go)から派生しています。
+- 変更点は以下の通りです。
+  - 本プロダクトは、HomeAssistantとの連携を目的としています。
+  - Atmark Techno社のSA-M0を使用しています。（2024年3月現在、ヤフオクにて、非常に手頃な価格でご購入いただけます。）
+  - HomeAssistantのMQTT AutoDiscoveryに対応しています。
+  - `godotenv`を使用して、環境変数の設定を簡略化しています。
+
 ## 動作環境
 
-* Raspberry Pi Zero WH
+* SA-M0
 * Golang 1.18
 
-開発はRPi Zeroで行っていますが、Linuxが動いてBP35A1とシリアル通信できる環境であれば、
+開発はSA-M0で行っていますが、Linuxが動いてBP35A1とシリアル通信できる環境であれば、
 動作すると思います。
 
 ## ビルド方法
 
 ```
-git pull https://github.com/yakumo-saki/b-route-reader-go.git
+git pull https://github.com/hldh214/b-route-reader-go
 cd b-route-reader-go
-go build .
+GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-s -w" .
 ```
 
 b-route-reader-go というファイルが実行ファイルです。
+
+## HomeAssistant との連携
+
+HomeAssistant と連携するためには、以下のような設定を行います。
+
+1. MQTTブローカーを立てる
+2. `MQTT_BROKER` にブローカーのアドレスを設定する
+3. AutoDiscovery に対応するため、 ほかの設定は不要です。
+
+![energy](https://github.com/hldh214/b-route-reader-go/assets/5501843/0397b729-2362-480a-8152-6dfee3e9f956)
+
+## SA-M0 の設定
+
+### storageをつける
+
+[Armadillo-Box WS1(旧 IIJ SA-M0)で遊ぶ準備をする](https://www2.hatenadiary.jp/entry/2023/04/26/202125) を参考にしてください。
+
+### 起動時に自動実行
+
+```shell
+# cat /etc/config/rc.local
+
+# ... 省略
+
+while : ; do /mnt/sd/b-route-reader-go 2>&1 | tee -a /mnt/sd/b-route-reader-go.log ; done &
+```
+
+### コンフィグ領域の保存
+
+```shell
+flatfsd -s
+```
 
 ## 動作
 
