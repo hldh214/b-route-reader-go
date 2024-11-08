@@ -2,6 +2,7 @@ package bp35a1
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/b-route-reader-go/src/config"
@@ -31,6 +32,10 @@ func InitializeBrouteConnection() (string, error) {
 	}
 
 	log.Info().Msgf("Found smartmeter %s", sm)
+	lqi, _ := strconv.Atoi(sm.LQI)
+	log.Info().Msgf("LQI: %d", lqi)
+	// rssi = 0.275 * lqi - 104.27
+	log.Info().Msgf("RSSI: %f", 0.275*float64(lqi)-104.27)
 
 	ipv6, err := convertPanIdToIpv6(sm.Addr)
 	if err != nil {

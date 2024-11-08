@@ -25,10 +25,10 @@ var MQTT_TOPIC_DEVICE_NAME = "smartmeter"
 var ACTIVE_SCAN_COUNT = 10
 
 // 瞬間消費電力値を取得する間隔（秒）
-var NOW_CONSUMPTION_WAIT = 20 * time.Second
+var NOW_CONSUMPTION_WAIT = 60 * time.Second
 
 // 積算消費電力値を取得する間隔（秒）
-var TOTAL_CONSUMPTION_WAIT = 180 * time.Second
+var TOTAL_CONSUMPTION_WAIT = 300 * time.Second
 
 // EchonetLiteのGET時にリトライする回数
 var MAX_ECHONET_GET_RETRY = 3
