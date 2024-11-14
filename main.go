@@ -57,7 +57,6 @@ EXIT:
 
 func runWithSerialPort() error {
 	var err error
-	var ipv6 string
 	var mqttClient mqtt.Client
 
 	// MQTT for HA
@@ -81,14 +80,15 @@ func runWithSerialPort() error {
 		return fmt.Errorf("test connection failed: %w", err)
 	}
 
-	ipv6, err = bp35a1.InitializeBrouteConnection()
+	initResult, err := bp35a1.InitializeBrouteConnection()
 	if err != nil {
 		log.Err(err).Msg(". Exiting.")
 		return fmt.Errorf("cannot initialize B-route connection: %w", err)
 	}
+	mqttClient.Publish(ha.RSSITopic, 0, true, fmt.Sprintf("%d", initResult.Rssi))
 
 	// echonet start
-	err = bp35a1.GetSmartMeterInitialData(ipv6)
+	err = bp35a1.GetSmartMeterInitialData(initResult.Ipv6)
 	if err != nil {
 		return fmt.Errorf("error occured while initializing echonet lite: %w", err)
 	}
@@ -103,7 +103,7 @@ func runWithSerialPort() error {
 	for {
 		select {
 		case <-nowTimer.C:
-			ret, err := bp35a1.GetNowConsumptionData(ipv6)
+			ret, err := bp35a1.GetNowConsumptionData(initResult.Ipv6)
 			if err != nil {
 				return fmt.Errorf("error occured while getting consumption: %w", err)
 			}
@@ -117,7 +117,7 @@ func runWithSerialPort() error {
 			mqttClient.Publish(ha.InstantaneousCurrentRPhaseTopic, 0, true, ret[fmt.Sprintf("%02X_Rphase", echonet.P_NOW_DENRYUU)].String())
 			mqttClient.Publish(ha.InstantaneousCurrentTPhaseTopic, 0, true, ret[fmt.Sprintf("%02X_Tphase", echonet.P_NOW_DENRYUU)].String())
 		case <-totalTimer.C:
-			ret, err := bp35a1.GetDeltaConsumptionData(ipv6)
+			ret, err := bp35a1.GetDeltaConsumptionData(initResult.Ipv6)
 			if err != nil {
 				return fmt.Errorf("error occured while getting delta consumption: %w", err)
 			}

@@ -11,6 +11,26 @@ import (
 func InitTopic(client mqtt.Client) {
 	topicPrefix := fmt.Sprintf("homeassistant/sensor/%s", config.MQTT_TOPIC_DEVICE_NAME)
 
+	rssiTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, RSSI)
+	rssiJson, _ := json.Marshal(map[string]interface{}{
+		"state_topic":         RSSITopic,
+		"icon":                "mdi:signal",
+		"device_class":        "signal_strength",
+		"state_class":         "measurement",
+		"unit_of_measurement": "dBm",
+		"entity_category":     "diagnostic",
+		"name":                "RSSI",
+		"object_id":           strings.Replace(RSSITopic, "/", "_", -1),
+		"unique_id":           strings.Replace(RSSITopic, "/", "_", -1),
+		"device": map[string]interface{}{
+			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
+			"name":         "SA-M0 B-route Reader",
+			"manufacturer": "Atmark Techno, Inc.",
+			"model":        "Armadillo-Box WS1",
+			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
+		}})
+	client.Publish(rssiTopic, 0, true, rssiJson)
+
 	ndceeTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, NormalDirectionCumulativeElectricEnergy)
 	ndceeJson, _ := json.Marshal(map[string]interface{}{
 		"state_topic":         NormalDirectionCumulativeElectricEnergyTopic,
