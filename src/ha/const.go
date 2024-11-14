@@ -5,6 +5,7 @@ import (
 	"github.com/yakumo-saki/b-route-reader-go/src/config"
 )
 
+const Status = "Status"
 const RSSI = "RSSI"
 const NormalDirectionCumulativeElectricEnergy = "NormalDirectionCumulativeElectricEnergy"
 const ReverseDirectionCumulativeElectricEnergy = "ReverseDirectionCumulativeElectricEnergy"
@@ -13,6 +14,7 @@ const InstantaneousCurrent = "InstantaneousCurrent"
 const InstantaneousCurrentRPhase = "InstantaneousCurrentRPhase"
 const InstantaneousCurrentTPhase = "InstantaneousCurrentTPhase"
 
+var StatusTopic = fmt.Sprintf("%s/%s/%s", config.MQTT_TOPIC_PREFIX, config.MQTT_TOPIC_DEVICE_NAME, Status)
 var RSSITopic = fmt.Sprintf("%s/%s/%s", config.MQTT_TOPIC_PREFIX, config.MQTT_TOPIC_DEVICE_NAME, RSSI)
 var NormalDirectionCumulativeElectricEnergyTopic = fmt.Sprintf("%s/%s/%s", config.MQTT_TOPIC_PREFIX, config.MQTT_TOPIC_DEVICE_NAME, NormalDirectionCumulativeElectricEnergy)
 var ReverseDirectionCumulativeElectricEnergyTopic = fmt.Sprintf("%s/%s/%s", config.MQTT_TOPIC_PREFIX, config.MQTT_TOPIC_DEVICE_NAME, ReverseDirectionCumulativeElectricEnergy)

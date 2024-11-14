@@ -75,21 +75,26 @@ func runWithSerialPort() error {
 		return fmt.Errorf("error occured while connecting to mqtt broker: %w", token.Error())
 	}
 
+	mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusConnecting)
 	err = bp35a1.StartConnection()
 	if err != nil {
+		mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusError)
 		return fmt.Errorf("test connection failed: %w", err)
 	}
 
 	initResult, err := bp35a1.InitializeBrouteConnection()
 	if err != nil {
+		mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusError)
 		log.Err(err).Msg(". Exiting.")
 		return fmt.Errorf("cannot initialize B-route connection: %w", err)
 	}
 	mqttClient.Publish(ha.RSSITopic, 0, true, fmt.Sprintf("%d", initResult.Rssi))
+	mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusConnected)
 
 	// echonet start
 	err = bp35a1.GetSmartMeterInitialData(initResult.Ipv6)
 	if err != nil {
+		mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusError)
 		return fmt.Errorf("error occured while initializing echonet lite: %w", err)
 	}
 
@@ -105,6 +110,7 @@ func runWithSerialPort() error {
 		case <-nowTimer.C:
 			ret, err := bp35a1.GetNowConsumptionData(initResult.Ipv6)
 			if err != nil {
+				mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusError)
 				return fmt.Errorf("error occured while getting consumption: %w", err)
 			}
 
@@ -112,6 +118,7 @@ func runWithSerialPort() error {
 
 			log.Info().Msgf("Smartmeter Response: %v", ret)
 
+			mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusRunning)
 			mqttClient.Publish(ha.InstantaneousElectricPowerTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_NOW_DENRYOKU)].String())
 			mqttClient.Publish(ha.InstantaneousCurrentTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_NOW_DENRYUU)].String())
 			mqttClient.Publish(ha.InstantaneousCurrentRPhaseTopic, 0, true, ret[fmt.Sprintf("%02X_Rphase", echonet.P_NOW_DENRYUU)].String())
@@ -119,6 +126,7 @@ func runWithSerialPort() error {
 		case <-totalTimer.C:
 			ret, err := bp35a1.GetDeltaConsumptionData(initResult.Ipv6)
 			if err != nil {
+				mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusError)
 				return fmt.Errorf("error occured while getting delta consumption: %w", err)
 			}
 
@@ -126,6 +134,7 @@ func runWithSerialPort() error {
 
 			log.Info().Msgf("Smartmeter Response: %v", ret)
 
+			mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusRunning)
 			mqttClient.Publish(ha.NormalDirectionCumulativeElectricEnergyTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU)].String())
 			mqttClient.Publish(ha.ReverseDirectionCumulativeElectricEnergyTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU_R)].String())
 		}

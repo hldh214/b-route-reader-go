@@ -8,8 +8,38 @@ import (
 	"strings"
 )
 
+var DEVICE = map[string]string{
+	"identifiers":  config.MQTT_TOPIC_DEVICE_NAME,
+	"name":         "SA-M0 B-route Reader",
+	"manufacturer": "Atmark Techno, Inc.",
+	"model":        "Armadillo-Box WS1",
+	"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
+}
+
+const (
+	StatusConnecting = "Connecting"
+	StatusConnected  = "Connected"
+	StatusRunning    = "Running"
+	StatusError      = "Error"
+)
+
 func InitTopic(client mqtt.Client) {
 	topicPrefix := fmt.Sprintf("homeassistant/sensor/%s", config.MQTT_TOPIC_DEVICE_NAME)
+
+	statusTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, Status)
+	statusJson, _ := json.Marshal(map[string]interface{}{
+		"state_topic":     StatusTopic,
+		"icon":            "mdi:information",
+		"device_class":    "enum",
+		"attributes":      map[string]interface{}{"options": []string{StatusConnecting, StatusConnected, StatusRunning, StatusError}},
+		"state_class":     "measurement",
+		"entity_category": "diagnostic",
+		"name":            "Status",
+		"object_id":       strings.Replace(StatusTopic, "/", "_", -1),
+		"unique_id":       strings.Replace(StatusTopic, "/", "_", -1),
+		"device":          DEVICE,
+	})
+	client.Publish(statusTopic, 0, true, statusJson)
 
 	rssiTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, RSSI)
 	rssiJson, _ := json.Marshal(map[string]interface{}{
@@ -22,13 +52,8 @@ func InitTopic(client mqtt.Client) {
 		"name":                "RSSI",
 		"object_id":           strings.Replace(RSSITopic, "/", "_", -1),
 		"unique_id":           strings.Replace(RSSITopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(rssiTopic, 0, true, rssiJson)
 
 	ndceeTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, NormalDirectionCumulativeElectricEnergy)
@@ -42,13 +67,8 @@ func InitTopic(client mqtt.Client) {
 		"name":                "Normal Direction Cumulative Electric Energy",
 		"object_id":           strings.Replace(NormalDirectionCumulativeElectricEnergyTopic, "/", "_", -1),
 		"unique_id":           strings.Replace(NormalDirectionCumulativeElectricEnergyTopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(ndceeTopic, 0, true, ndceeJson)
 
 	rdceeTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, ReverseDirectionCumulativeElectricEnergy)
@@ -62,13 +82,8 @@ func InitTopic(client mqtt.Client) {
 		"name":                "Reverse Direction Cumulative Electric Energy",
 		"object_id":           strings.Replace(ReverseDirectionCumulativeElectricEnergyTopic, "/", "_", -1),
 		"unique_id":           strings.Replace(ReverseDirectionCumulativeElectricEnergyTopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(rdceeTopic, 0, true, rdceeJson)
 
 	iepTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, InstantaneousElectricPower)
@@ -82,13 +97,8 @@ func InitTopic(client mqtt.Client) {
 		"name":                "Instantaneous Electric Power",
 		"object_id":           strings.Replace(InstantaneousElectricPowerTopic, "/", "_", -1),
 		"unique_id":           strings.Replace(InstantaneousElectricPowerTopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(iepTopic, 0, true, iepJson)
 
 	icTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, InstantaneousCurrent)
@@ -102,13 +112,8 @@ func InitTopic(client mqtt.Client) {
 		"name":                "Instantaneous Current",
 		"object_id":           strings.Replace(InstantaneousCurrentTopic, "/", "_", -1),
 		"unique_id":           strings.Replace(InstantaneousCurrentTopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(icTopic, 0, true, icJson)
 
 	icrTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, InstantaneousCurrentRPhase)
@@ -122,13 +127,8 @@ func InitTopic(client mqtt.Client) {
 		"name":                "Instantaneous Current R Phase",
 		"object_id":           strings.Replace(InstantaneousCurrentRPhaseTopic, "/", "_", -1),
 		"unique_id":           strings.Replace(InstantaneousCurrentRPhaseTopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(icrTopic, 0, true, icrJson)
 
 	ictTopic := fmt.Sprintf("%s/%s_sensor_%s/config", topicPrefix, config.MQTT_TOPIC_DEVICE_NAME, InstantaneousCurrentTPhase)
@@ -142,12 +142,7 @@ func InitTopic(client mqtt.Client) {
 		"name":                "Instantaneous Current T Phase",
 		"object_id":           strings.Replace(InstantaneousCurrentTPhaseTopic, "/", "_", -1),
 		"unique_id":           strings.Replace(InstantaneousCurrentTPhaseTopic, "/", "_", -1),
-		"device": map[string]interface{}{
-			"identifiers":  []string{config.MQTT_TOPIC_DEVICE_NAME},
-			"name":         "SA-M0 B-route Reader",
-			"manufacturer": "Atmark Techno, Inc.",
-			"model":        "Armadillo-Box WS1",
-			"sw_version":   "Linux abws1-0 3.14.36-at11 #1 PREEMPT Sat Mar 31 02:35:12 JST 2018 armv5tejl GNU/Linux",
-		}})
+		"device":              DEVICE,
+	})
 	client.Publish(ictTopic, 0, true, ictJson)
 }
