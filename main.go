@@ -134,9 +134,17 @@ func runWithSerialPort() error {
 
 			log.Info().Msgf("Smartmeter Response: %v", ret)
 
+			nd := ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU)]
+			rd := ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU_R)]
+
+			if nd.String() == "0" || rd.String() == "0" {
+				log.Info().Msg("No data. Skip.")
+				continue
+			}
+
 			mqttClient.Publish(ha.StatusTopic, 0, true, ha.StatusRunning)
-			mqttClient.Publish(ha.NormalDirectionCumulativeElectricEnergyTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU)].String())
-			mqttClient.Publish(ha.ReverseDirectionCumulativeElectricEnergyTopic, 0, true, ret[fmt.Sprintf("%02X", echonet.P_DELTA_DENRYOKU_R)].String())
+			mqttClient.Publish(ha.NormalDirectionCumulativeElectricEnergyTopic, 0, true, nd.String())
+			mqttClient.Publish(ha.ReverseDirectionCumulativeElectricEnergyTopic, 0, true, rd.String())
 		}
 	}
 }
